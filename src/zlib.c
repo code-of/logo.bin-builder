@@ -1,5 +1,5 @@
 // Copyright MIT License (c) 2018
-// Marcel Bobolz <ergotamin@e-p-s.org>
+// Marcel Bobolz <ergotamin.source@gmail.com>
 
 #include "mtkutil.h"
 #include <zlib.h>
