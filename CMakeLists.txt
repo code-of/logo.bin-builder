@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(MtkUtil
         DESCRIPTION "Unpack/Repack MTK logo.bin-file"
-        HOMEPAGE_URL "https://github.com/ergotamin/mtkutil"
+        HOMEPAGE_URL "https://github.com/ergotamin/mediathek-logo.bin-builder.git"
         LANGUAGES C)
 
 add_definitions(-DGNU_SOURCE -D__IDENT__=${PROJECT_NAME})
