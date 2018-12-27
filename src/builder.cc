@@ -3,11 +3,16 @@
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
 #include <builder.hh>
+/*
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+*/
+using namespace std;
+using namespace zlib;
+namespace fs = std::filesystem;
 
 static const struct MagicHeader {
     const unsigned char mtklogo[12];
@@ -28,33 +33,26 @@ static const struct MagicHeader {
 };
 
 static const Geometry Geometries[12] = {
-    { 360,	640	 }, { 375, 667 }, { 720, 1280 }, { 320, 568 },
-    { 320,	534	 }, { 480, 800 }, { 320, 570  }, { 540, 960 },
-    { 1080, 1920 }, { 480, 854 }, { 412, 732  }, { 640, 360 }
+    { 360,	640	 }, { 375, 667 },
+    { 720,	1280 }, { 320, 568 },
+    { 320,	534	 }, { 480, 800 },
+    { 320,	570	 }, { 540, 960 },
+    { 1080, 1920 }, { 480, 854 },
+    { 412,	732	 }, { 640, 360 }
 };
 
-Builder::Builder(void)
+bool Builder::unpack(string dstDir, string logoFile)
 {
-    return;
-}
+    fs::path logoBin = fs::absolute(logoFile.c_str());
 
-Builder::~Builder(void)
-{
-    return;
-}
-
-bool Builder::unpack(string dstDir, string logoBin)
-{
     if (true == this->verify(MTK_LOGOBIN, logoBin)) {
         if (!this->checkexist(dstDir))
-            filesystem::create_directory(dstDir);
-        filesystem::copy_file(logoBin, dstDir.append("logo.bin"));
+            fs::create_directory(dstDir);
         if (0 == chdir(dstDir.c_str())) {
-            if (0 < this->extract("logo.bin")) {
-                if (this->evaluate(filesystem::current_path().c_str())) {
-                    if (this->convert(filesystem::current_path().c_str())) {
-                        for (int iter = 0; iter < images.size(); iter++)
-                            cout << "Unpacked: " << images.at(iter) << endl;
+            if (this->extract(logoBin)) {
+                if (this->evaluate(this->pwd())) {
+                    if (this->convert(this->pwd())) {
+                        this->copy(".logo.bak", logoBin);
                         return true;
                     } else {
                         perr("Something during image conversion went wrong...");
@@ -76,7 +74,6 @@ bool Builder::unpack(string dstDir, string logoBin)
 
 bool Builder::repack(string logoBin, string srcDir)
 {
-    ;
     return true;
 }
 
@@ -92,7 +89,7 @@ bool Builder::verify(MagicID id, string path)
         file.close();
     } else {
         perr("open(" << path << ") failed...");
-        exit EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
     switch (id) {
     case MTK_LOGOBIN:
@@ -103,7 +100,7 @@ bool Builder::verify(MagicID id, string path)
         result = this->compare(MagicNumbers.zlib, header);
         break;
 
-    case PNG_PICTURE;
+    case PNG_PICTURE:
         result = this->compare(MagicNumbers.png, header);
         break;
 
@@ -115,9 +112,12 @@ bool Builder::verify(MagicID id, string path)
     return result;
 }
 
-int Builder::extract(string path)
+bool Builder::extract(string path)
 {
-    return this->zscan(path);
+    if (this->zscan(path))
+        return true;
+    else
+        return false;
 }
 
 bool Builder::evaluate(string path)
@@ -125,15 +125,15 @@ bool Builder::evaluate(string path)
     unsigned int pixels = 0;
     unsigned int rgbasize = 0;
 
-    for (auto& p: filesystem::directory_iterator(path.c_str()))
-        if (size < filesystem::file_size(p.path().c_str()))
-            rgbasize = filesystem::file_size(p.path().c_str());
+    for (auto& p: fs::directory_iterator(path))
+        if (rgbasize < fs::file_size(p.path()))
+            rgbasize = fs::file_size(p.path());
 
     pixels = rgbasize / 4;
 
     for (int i = 0; i < 12; i++)
         if (pixels == (Geometries[i].width * Geometries[i].height))
-            this->geometry = (Geometry *)&Geometries[i];
+            this->geometry = Geometries[i];
 
     if (this->geometry.width && this->geometry.height)
         return true;
@@ -141,18 +141,53 @@ bool Builder::evaluate(string path)
         return false;
 }
 
-bool Builder::insert(string path, unsigned long offset)
+bool Builder::convert(string path)
 {
-    ;
+    /*
+    for (auto& p: fs::directory_iterator(path)) {
+        if (p.path().remove_filename().string().compare(".zlib")) {
+            fs::remove(p.path());
+        } else {
+            this->images.push_back({
+                p.path().string(),
+                p.path().replace_extension(".rgba").string(),
+                p.path().replace_extension(".png").string(),
+                strtoul(p.path().replace_extension("").c_str(), nullptr, 1)
+            });
+        }
+    }
+    */
     return true;
 }
 
-bool Builder::checkexist(const filesystem::path& p, filesystem::file_status s = filesystem::file_status{})
+bool Builder::insert(string path, unsigned long offset)
 {
-    if (filesystem::status_known(s) ? filesystem::exists(s) : filesystem::exists(p))
+    return true;
+}
+
+string Builder::pwd(void)
+{
+    return fs::current_path().c_str();
+}
+
+bool Builder::checkexist(string path)
+{
+    const fs::path p = path;
+    fs::file_status s = fs::file_status{};
+
+    if (fs::status_known(s) ? fs::exists(s) : fs::exists(p))
         return true;
     else
         return false;
+}
+
+void Builder::copy(string dest, string src)
+{
+    try {
+        fs::copy_file(src, dest, fs::copy_options::overwrite_existing);
+    } catch (fs::filesystem_error &e) {
+        perr("Could not copy " << src << " to " << dest << ":" << e.what());
+    }
 }
 
 bool Builder::compare(unsigned const char *need, unsigned const char *have)
@@ -168,11 +203,17 @@ bool Builder::compare(unsigned const char *need, unsigned const char *have)
     return result;
 }
 
-static void Builder::copy(string dest, string src)
+#if 1
+
+int main(int argc, char **argv)
 {
-    ;
-    ;
+    argc--;
+    argv++;
+    Builder builder;
+    if (2 == argc)
+        return builder.unpack(argv[1], argv[0]);
+    else
+        return EXIT_FAILURE;
 }
-static void Builder::move(string dest, string src)
-{
-}
+
+#endif

@@ -4,15 +4,8 @@
 #// <ergotamin.source@gmail.com>
 #include <zlib.hh>
 
+using namespace std;
 using namespace zlib;
-
-ZConverter::ZConverter(void)
-{
-}
-
-ZConverter::~ZConverter(void)
-{
-}
 
 int ZConverter::zinflate(string inFile, string outFile)
 {
@@ -154,7 +147,7 @@ int ZConverter::zscan(string binFile)
         if (byte == zmagic[0]) {
             byte = fgetc(bin);
             if (byte == zmagic[1]) {
-                (this->ztry(binFile, le, i) == EXIT_SUCCESS)
+                (this->ztry(binFile, le, i))
                 ? (matches++)
                 : (0);
                 fseek(bin, i, SEEK_SET);
@@ -172,7 +165,7 @@ bool ZConverter::ztry(string binary, long int size, long int offset)
 {
     Byte buf = 0x00;
     long int iter = (size - offset);
-    string rgb565 = to_string(offset - 1).append(".rgb565");
+    string rgba = to_string(offset - 1).append(".rgba");
     string zblob = to_string(offset - 1).append(".zlib");
     FILE *stream = fopen(zblob.c_str(), "wb+");
     FILE *binfile = fopen(binary.c_str(), "rb");
@@ -187,12 +180,12 @@ bool ZConverter::ztry(string binary, long int size, long int offset)
     fclose(binfile);
     fclose(stream);
 
-    this->zinflate(zblob, rgb565);
+    this->zinflate(zblob, rgba);
     unlink(zblob.c_str());
-    if (0 == access(rgb565.c_str(), F_OK)) {
+    if (0 == access(rgba.c_str(), F_OK)) {
         return true;
     } else {
-        unlink(rgb565.c_str());
+        unlink(rgba.c_str());
         return false;
     }
 }

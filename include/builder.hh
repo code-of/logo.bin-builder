@@ -3,32 +3,29 @@
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
 static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
-#pragma ident             __BASE_FILE__
-#undef __cplusplus
-#define __cplusplus       202012L
+#/**/ undef  /**/ __cplusplus
+#/**/ define /**/ __cplusplus       202012L
+#/**/ define /**/ __Begin           extern "C" {
+#/**/ define /**/ __End             }
 
 #include <cstdlib>
 #include <cstdio>
-#include <unistd.h>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
+#include <unistd.h>
 #include <filesystem>
+#include <iostream>
 #include <fstream>
 #include <ostream>
 #include <string>
 #include <array>
 #include <vector>
 #include <utility>
-#include <new>
-#include <exception>
 #include <thread>
-
+#include <exception>
+#include <new>
 #include <zlib.hh>
-
-using namespace std;
-using namespace zlib;
 
 #define __const           __attribute__((const))
 #define __flat            __attribute__((flatten))
@@ -45,11 +42,10 @@ using namespace zlib;
 #define up1()             "\x1b[A"
 
 #define pout(...) \
-    cout << __VA_ARGS__ << endl;
+    std::cout << __VA_ARGS__ << endl;
 
 #define perr(...) \
-    cerr << fg("255", "0", "0") << __VA_ARGS__ << $(sgr) << endl;
-
+    std::cerr << fg("255", "0", "0") << __VA_ARGS__ << sgr() << std::endl;
 
 enum MagicID {
     MTK_LOGOBIN,
@@ -63,31 +59,29 @@ typedef struct {
 } Geometry;
 
 typedef struct {
-    string			zlibfile;
-    string			rawfile;
-    string			pngfile;
+    std::string		zlibFile;
+    std::string		rgbaFile;
+    std::string		pngFile;
     unsigned long	offset;
 } Image;
 
-class Builder : public ZConverter {
+class Builder : public zlib::ZConverter {
     public:
-        Builder(void);
-        ~Builder(void);
-        bool unpack(string dstDir, string logoBin);
-        bool repack(string logoBin, string srcDir);
+        bool unpack(std::string dstDir, std::string logoBin);
+        bool repack(std::string logoBin, std::string srcDir);
 
     protected:
-        vector<Image> images;
-        bool verify(MagicID id, string path);
-        int extract(string path);
-        bool evaluate(string path);
-        bool convert(string path);
-        bool insert(string path, unsigned long offset);
+        Geometry geometry;
+        std::vector<Image> images;
+        bool verify(MagicID id, std::string path);
+        bool extract(std::string path);
+        bool evaluate(std::string path);
+        bool convert(std::string path);
+        bool insert(std::string path, unsigned long offset);
 
     private:
-        Geometry geometry;
-        bool checkexist(const filesystem::path& p, filesystem::file_status s = filesystem::file_status{});
-        bool compare(unsigned const char *need, unsigned const char *have);
-        void copy(string dest, string src);
-        void move(string dest, string src);
+        std::string pwd(void);
+        bool checkexist(std::string path);
+        void copy(std::string dest, std::string src);
+        bool compare(const Byte *need, const Byte *have);
 };

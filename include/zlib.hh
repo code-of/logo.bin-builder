@@ -10,16 +10,15 @@ static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
 #include <cstdio>
 #include <cstring>
 #include <cassert>
-#include <string>
 #include <unistd.h>
+#include <string>
+
 
 __Begin
 #include <fcntl.h>
 #include <zlib.h>
 #include <sys/types.h>
 __End
-
-using namespace std;
 
 namespace zlib {
     typedef z_stream zstream;
@@ -48,14 +47,12 @@ namespace zlib {
 
     class ZConverter {
         public:
-            ZConverter(void);
-            ~ZConverter(void);
-            int zinflate(string inFile, string outFile);
-            int zdeflate(string inFile, string outFile);
-            int zscan(string binFile);
+            int zinflate(std::string inFile, std::string outFile);
+            int zdeflate(std::string inFile, std::string outFile);
+            int zscan(std::string binFile);
 
         protected:
-            bool ztry(string binary, long int size, long int offset);
+            bool ztry(std::string binary, long int size, long int offset);
             void zini(zstream *stream, unsigned int mode);
             void zfini(zstream *stream, unsigned int mode);
     };
