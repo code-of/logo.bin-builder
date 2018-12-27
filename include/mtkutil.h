@@ -91,12 +91,12 @@ typedef struct {
 } ImageFormat;
 
 typedef struct {
-    char *			zlib_name;
-    char *			raw_name;
-    char *			png_name;
-    long			offset;
-    long			rawsize;
-    ImageFormat *	screen;
+    char		*zlib_name;
+    char		*raw_name;
+    char		*png_name;
+    long		offset;
+    long		rawsize;
+    ImageFormat *screen;
 } File;
 
 typedef void (*ConvertFunc)(File *);

@@ -16,7 +16,7 @@ find_package(ImageMagick REQUIRED COMPONENTS MagickCore MagickWand)
 find_package(GTK REQUIRED gtk+-3.0)
 find_package(ZLIB REQUIRED)
 
-if((NOT GTK_FOUND) OR (NOT ZLIB_FOUND) OR (NOT ImageMagick_FOUND))
+if((NOT ZLIB_FOUND) OR (NOT ImageMagick_FOUND))
       message(FATAL_ERROR "You are missing required dependencies !")
 endif()
 
