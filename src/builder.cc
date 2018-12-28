@@ -30,7 +30,7 @@ static const struct MagicHeader {
     },
 };
 
-static const Resolution Geometries[29] = {
+static const Resolution Resolutions[29] = {
     { 38,	54	 }, { 48,	54	 }, { 135,	24	 },
     { 135,	1	 }, { 120,	160	 }, { 160,	240	 },
     { 240,	320	 }, { 240,	400	 }, { 320,	480	 },
@@ -52,21 +52,11 @@ int Builder::unpack(string logoFile, string dstDir)
             fs::create_directory(dstDir);
         if (EXIT_SUCCESS == chdir(dstDir.c_str())) {
             if (true == this->extract(logoBin)) {
-                if (true == this->sizehint(this->pwd())) {
-                    if (true == this->convert()) {
-                        this->copy(".logo.bak", logoBin);
-                        return EXIT_SUCCESS;
-                    } else {
-                        perr("Something during image conversion went wrong...");
-                    }
-                } else {
-                    perr("Could not evaluate display geometry...");
+                if (true == this->convert(0)) {
+                    this->copy(".logo.bak", logoBin);
+                    return EXIT_SUCCESS;
                 }
-            } else {
-                perr("Extraction of logo.bin failed...");
             }
-        } else {
-            perr("chdir() failed...");
         }
     } else {
         perr("Invalid/Corrupted logo.bin-file...")
@@ -74,9 +64,20 @@ int Builder::unpack(string logoFile, string dstDir)
     return EXIT_FAILURE;
 }
 
-int Builder::pack(string logoBin, string srcDir)
+int Builder::pack(string logoFile, string srcDir)
 {
-    return EXIT_SUCCESS;
+    fs::path logoBin = fs::absolute(logoFile.c_str());
+
+    if (true == this->exists(srcDir)) {
+        if (EXIT_SUCCESS == chdir(srcDir.c_str())) {
+            if (true == this->convert(1)) {
+                if (true == this->insert())
+                    this->copy(logoFile, ".logo.bak");
+                return EXIT_SUCCESS;
+            }
+        }
+    }
+    return EXIT_FAILURE;
 }
 
 bool Builder::compare(unsigned const char *need, unsigned const char *have)
@@ -144,25 +145,25 @@ bool Builder::extract(string logoBin)
         return false;
 }
 
-bool Builder::sizehint(string dir)
+void Builder::geometry(string fpath, Resolution *resolution)
 {
     unsigned int pixels = 0;
-    unsigned int rgbasize = 0;
+    fs::path path;
 
-    for (auto& p: fs::directory_iterator(dir))
-        if (rgbasize < fs::file_size(p.path()))
-            rgbasize = fs::file_size(p.path());
+    path.assign(fpath);
+    pixels = fs::file_size(path) / 4;
 
-    pixels = rgbasize / 4;
-
-    for (int i = 0; i < 12; i++)
-        if (pixels == (Geometries[i].width * Geometries[i].height))
-            this->geometry = Geometries[i];
-
-    if (this->geometry.width && this->geometry.height)
-        return true;
-    else
-        return false;
+    for (int i = 0; i < 29; i++) {
+        if (pixels == (Resolutions[i].width * Resolutions[i].height)) {
+            resolution->width = Resolutions[i].width;
+            resolution->height = Resolutions[i].height;
+            return;
+        } else {
+            resolution->width = 0;
+            resolution->height = 0;
+        }
+    }
+    return;
 }
 
 
@@ -182,18 +183,50 @@ string Builder::pwd(void)
     return fs::current_path().c_str();
 }
 
-bool Builder::convert(void)
+bool Builder::convert(int ctx)
 {
-    /*
-    for (auto& p: fs::directory_iterator(path)) {
-        if (p.path().remove_filename().string().compare(".zlib")) {
-            fs::remove(p.path());
-    */
-    return true;
+    for (auto& p: fs::directory_iterator(this->pwd())) {
+        string file = p.path().string();
+        if (0 == ctx)
+            if (0 == file.substr(file.find_last_of(".") + 1).compare("rgba"))
+                this->images.push_back(file);
+        if (1 == ctx)
+            if (0 == file.substr(file.find_last_of(".") + 1).compare("png"))
+                this->images.push_back(file);
+    }
+    if (0 == ctx) {
+        for (size_t iter = 0; iter < this->images.size(); iter++) {
+            Resolution resolution;
+            string file = this->images.at(iter);
+            this->geometry(file, &resolution);
+            if (resolution.height && resolution.width)
+                this->to_png(file, resolution.width, resolution.height);
+            fs::remove(file);
+        }
+        return true;
+    }
+    if (1 == ctx) {
+        for (size_t iter = 0; iter < this->images.size(); iter++) {
+            string file = this->images.at(iter);
+            this->to_rgba(file);
+            this->images.at(iter).assign(file.replace(file.end() - 3, file.end(), "rgba").c_str());
+            if (EXIT_SUCCESS == this->zdeflate(this->images.at(iter), file.replace(file.end() - 3, file.end(), "zlib").c_str()))
+                fs::remove(this->images.at(iter));
+        }
+        return true;
+    }
+    return false;
 }
 
 bool Builder::insert(void)
 {
+    vector<string> *zblob = new vector<string>;
+
+    for (auto& p: fs::directory_iterator(this->pwd())) {
+        string file = p.path().string();
+        if (0 == file.substr(file.find_last_of(".") + 1).compare("zlib"))
+            zblob->push_back(file);
+    }
     return true;
 }
 

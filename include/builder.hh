@@ -51,21 +51,20 @@ enum MagicID {
 
 class Builder : public ZHandle, public Converter {
     public:
-        int unpack(std::string logoBin, std::string dstDir);
-        int pack(std::string logoBin, std::string srcDir);
+        int unpack(std::string logoFile, std::string dstDir);
+        int pack(std::string logoFile, std::string srcDir);
 
     protected:
         bool compare(const unsigned char *need, const unsigned char *have);
         void copy(std::string dest, std::string src);
         bool verify(MagicID id, std::string fpath);
+        void geometry(std::string fpath, Resolution *resolution);
+        bool convert(int ctx);
         bool extract(std::string logoBin);
-        bool sizehint(std::string dir);
         bool exists(std::string path);
         std::string pwd(void);
-        bool convert(void);
         bool insert(void);
 
     private:
-        Resolution geometry;
         std::vector<std::string> images;
 };

@@ -12,6 +12,6 @@ static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
 class Converter {
     public:
         Converter(void);
-        int to_png(std::string fpath, int width, int height);
-        int to_rgba(std::string fpath, int width, int height);
+        void to_png(std::string fpath, int width, int height);
+        void to_rgba(std::string fpath /*, int width, int height*/);
 };

@@ -13,13 +13,17 @@ Converter::Converter(void)
     InitializeMagick(NULL);
 }
 
-int Converter::to_png(string fpath, int width, int height)
+void Converter::to_png(string fpath, int width, int height)
 {
     Image image;
+    string size = to_string(width);
 
-    image.size(to_string(width).append("x").append(to_string(height)).c_str());
+    size.append("x");
+    size.append(to_string(height).c_str());
 
+    image.size(size.c_str());
     image.depth(8);
+
     try {
         image.read(fpath.c_str());
         image.magick("PNG");
@@ -27,16 +31,16 @@ int Converter::to_png(string fpath, int width, int height)
     } catch (Exception &e) {
         cerr << "Caught an exception: " << e.what() << endl;
     }
-    return EXIT_SUCCESS;
 }
 
-int Converter::to_rgba(string fpath, int width, int height)
+void Converter::to_rgba(string fpath /*, int width, int height*/)
 {
     Image image;
 
+/*
     image.size(to_string(width).append("x").append(to_string(height)).c_str());
-
     image.depth(8);
+*/
     try {
         image.read(fpath.c_str());
         image.magick("RGBA");
@@ -44,5 +48,4 @@ int Converter::to_rgba(string fpath, int width, int height)
     } catch (Exception &e) {
         cerr << "Caught an exception: " << e.what() << endl;
     }
-    return EXIT_SUCCESS;
 }
