@@ -3,15 +3,13 @@
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
 #include <builder.hh>
-/*
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-*/
+#include <filesystem>
+#include <iostream>
+#include <fstream>
+#include <cstring>
+#include <new>
+
 using namespace std;
-using namespace zlib;
 namespace fs = std::filesystem;
 
 static const struct MagicHeader {
@@ -32,28 +30,32 @@ static const struct MagicHeader {
     },
 };
 
-static const Geometry Geometries[12] = {
-    { 360,	640	 }, { 375, 667 },
-    { 720,	1280 }, { 320, 568 },
-    { 320,	534	 }, { 480, 800 },
-    { 320,	570	 }, { 540, 960 },
-    { 1080, 1920 }, { 480, 854 },
-    { 412,	732	 }, { 640, 360 }
+static const Resolution Geometries[29] = {
+    { 38,	54	 }, { 48,	54	 }, { 135,	24	 },
+    { 135,	1	 }, { 120,	160	 }, { 160,	240	 },
+    { 240,	320	 }, { 240,	400	 }, { 320,	480	 },
+    { 320,	570	 }, { 360,	640	 }, { 480,	640	 },
+    { 540,	960	 }, { 640,	360	 }, { 480,	800	 },
+    { 480,	854	 }, { 600,	800	 }, { 576,	1024 },
+    { 600,	1024 }, { 720,	1280 }, { 768,	1024 },
+    { 864,	1152 }, { 900,	1440 }, { 1024, 1280 },
+    { 1050, 1400 }, { 1050, 1680 }, { 1080, 1920 },
+    { 1200, 1600 }, { 1200, 1920 },
 };
 
-bool Builder::unpack(string dstDir, string logoFile)
+int Builder::unpack(string logoFile, string dstDir)
 {
     fs::path logoBin = fs::absolute(logoFile.c_str());
 
     if (true == this->verify(MTK_LOGOBIN, logoBin)) {
-        if (!this->checkexist(dstDir))
+        if (false == this->exists(dstDir))
             fs::create_directory(dstDir);
-        if (0 == chdir(dstDir.c_str())) {
-            if (this->extract(logoBin)) {
-                if (this->evaluate(this->pwd())) {
-                    if (this->convert(this->pwd())) {
+        if (EXIT_SUCCESS == chdir(dstDir.c_str())) {
+            if (true == this->extract(logoBin)) {
+                if (true == this->sizehint(this->pwd())) {
+                    if (true == this->convert()) {
                         this->copy(".logo.bak", logoBin);
-                        return true;
+                        return EXIT_SUCCESS;
                     } else {
                         perr("Something during image conversion went wrong...");
                     }
@@ -69,26 +71,48 @@ bool Builder::unpack(string dstDir, string logoFile)
     } else {
         perr("Invalid/Corrupted logo.bin-file...")
     }
-    return false;
+    return EXIT_FAILURE;
 }
 
-bool Builder::repack(string logoBin, string srcDir)
+int Builder::pack(string logoBin, string srcDir)
 {
-    return true;
+    return EXIT_SUCCESS;
 }
 
-bool Builder::verify(MagicID id, string path)
+bool Builder::compare(unsigned const char *need, unsigned const char *have)
+{
+    bool result = true;
+    long int length = strlen((const char *)need);
+
+    for (int i = 0; i < length; i++)
+        (have[i] != need[i])
+        ? (result = false)
+        : (0);
+
+    return result;
+}
+
+void Builder::copy(string dest, string src)
+{
+    try {
+        fs::copy_file(src, dest, fs::copy_options::overwrite_existing);
+    } catch (fs::filesystem_error &e) {
+        perr("Could not copy " << src << " to " << dest << ":" << e.what());
+    }
+}
+
+bool Builder::verify(MagicID id, string fpath)
 {
     bool result = false;
     unsigned char *header;
-    ifstream file(path.c_str(), ios::in | ios::binary);
+    ifstream file(fpath.c_str(), ios::in | ios::binary);
 
     if (file.is_open()) {
         header = new unsigned char [12];
         file.read((char *)header, static_cast<streamsize>(12));
         file.close();
     } else {
-        perr("open(" << path << ") failed...");
+        perr("open(" << fpath << ") failed...");
         exit(EXIT_FAILURE);
     }
     switch (id) {
@@ -112,20 +136,20 @@ bool Builder::verify(MagicID id, string path)
     return result;
 }
 
-bool Builder::extract(string path)
+bool Builder::extract(string logoBin)
 {
-    if (this->zscan(path))
+    if (this->zscan(logoBin))
         return true;
     else
         return false;
 }
 
-bool Builder::evaluate(string path)
+bool Builder::sizehint(string dir)
 {
     unsigned int pixels = 0;
     unsigned int rgbasize = 0;
 
-    for (auto& p: fs::directory_iterator(path))
+    for (auto& p: fs::directory_iterator(dir))
         if (rgbasize < fs::file_size(p.path()))
             rgbasize = fs::file_size(p.path());
 
@@ -141,36 +165,8 @@ bool Builder::evaluate(string path)
         return false;
 }
 
-bool Builder::convert(string path)
-{
-    /*
-    for (auto& p: fs::directory_iterator(path)) {
-        if (p.path().remove_filename().string().compare(".zlib")) {
-            fs::remove(p.path());
-        } else {
-            this->images.push_back({
-                p.path().string(),
-                p.path().replace_extension(".rgba").string(),
-                p.path().replace_extension(".png").string(),
-                strtoul(p.path().replace_extension("").c_str(), nullptr, 1)
-            });
-        }
-    }
-    */
-    return true;
-}
 
-bool Builder::insert(string path, unsigned long offset)
-{
-    return true;
-}
-
-string Builder::pwd(void)
-{
-    return fs::current_path().c_str();
-}
-
-bool Builder::checkexist(string path)
+bool Builder::exists(string path)
 {
     const fs::path p = path;
     fs::file_status s = fs::file_status{};
@@ -181,27 +177,26 @@ bool Builder::checkexist(string path)
         return false;
 }
 
-void Builder::copy(string dest, string src)
+string Builder::pwd(void)
 {
-    try {
-        fs::copy_file(src, dest, fs::copy_options::overwrite_existing);
-    } catch (fs::filesystem_error &e) {
-        perr("Could not copy " << src << " to " << dest << ":" << e.what());
-    }
+    return fs::current_path().c_str();
 }
 
-bool Builder::compare(unsigned const char *need, unsigned const char *have)
+bool Builder::convert(void)
 {
-    bool result = true;
-    long int length = strlen((const char *)need);
-
-    for (int i = 0; i < length; i++)
-        (have[i] != need[i])
-        ? (result = false)
-        : (0);
-
-    return result;
+    /*
+    for (auto& p: fs::directory_iterator(path)) {
+        if (p.path().remove_filename().string().compare(".zlib")) {
+            fs::remove(p.path());
+    */
+    return true;
 }
+
+bool Builder::insert(void)
+{
+    return true;
+}
+
 
 #if 1
 
@@ -211,7 +206,7 @@ int main(int argc, char **argv)
     argv++;
     Builder builder;
     if (2 == argc)
-        return builder.unpack(argv[1], argv[0]);
+        return builder.unpack(argv[0], argv[1]);
     else
         return EXIT_FAILURE;
 }

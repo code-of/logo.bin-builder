@@ -3,17 +3,33 @@
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
 #include <zlib.hh>
+#include <fcntl.h>
+#include <cassert>
 
 using namespace std;
-using namespace zlib;
 
-int ZConverter::zinflate(string inFile, string outFile)
+constexpr unsigned int CHUNK = (0x4000U);
+
+constexpr Byte CMF = ((Byte)0x78);
+
+constexpr Byte FLG(int level)
+{
+    return (level > 1)
+           ? ((level > 5)
+              ? ((level < 7)
+                 ?  ((Byte)0x9C)
+                 : ((Byte)0xDA))
+              : ((Byte)0x5E))
+           : ((Byte)0x01);
+}
+
+int ZHandle::zinflate(string inFile, string outFile)
 {
     int ret = 0;
-    zstream stream;
+    z_stream stream;
     Byte ibuf[CHUNK];
     Byte obuf[CHUNK];
-    u_int32_t have_bytes = 0;
+    unsigned int have_bytes = 0;
 
     this->zini(&stream, 0x1F);
     FILE *input = fopen(inFile.c_str(), "rb+");
@@ -68,14 +84,14 @@ int ZConverter::zinflate(string inFile, string outFile)
     return EXIT_FAILURE;
 }
 
-int ZConverter::zdeflate(string inFile, string outFile)
+int ZHandle::zdeflate(string inFile, string outFile)
 {
     int ret = 0;
     int flush = 0;
-    zstream stream;
+    z_stream stream;
     Byte ibuf[CHUNK];
     Byte obuf[CHUNK];
-    u_int32_t have_bytes = 0;
+    unsigned int have_bytes = 0;
 
     this->zini(&stream, 0xDE);
     FILE *input = fopen(inFile.c_str(), "rb+");
@@ -124,7 +140,7 @@ int ZConverter::zdeflate(string inFile, string outFile)
     return EXIT_FAILURE;
 }
 
-int ZConverter::zscan(string binFile)
+int ZHandle::zscan(string binFile)
 {
     long int i = 0;
     long int le = 0;
@@ -161,7 +177,7 @@ int ZConverter::zscan(string binFile)
     return matches;
 }
 
-bool ZConverter::ztry(string binary, long int size, long int offset)
+bool ZHandle::ztry(string binary, long int size, long int offset)
 {
     Byte buf = 0x00;
     long int iter = (size - offset);
@@ -190,7 +206,7 @@ bool ZConverter::ztry(string binary, long int size, long int offset)
     }
 }
 
-void ZConverter::zini(zstream *stream, unsigned int mode)
+void ZHandle::zini(z_stream *stream, unsigned int mode)
 {
     stream->zalloc = Z_NULL;
     stream->zfree = Z_NULL;
@@ -213,7 +229,7 @@ void ZConverter::zini(zstream *stream, unsigned int mode)
     return;
 }
 
-void ZConverter::zfini(zstream *stream, unsigned int mode)
+void ZHandle::zfini(z_stream *stream, unsigned int mode)
 {
     switch (mode) {
     case 0xDE:
@@ -233,7 +249,7 @@ int main(int argc, char **argv)
 {
     argc--;
     argv++;
-    ZConverter Converter;
+    ZHandle Converter;
     if (1 == argc) {
         return Converter.zscan(argv[0]);
     } else if (3 == argc) {

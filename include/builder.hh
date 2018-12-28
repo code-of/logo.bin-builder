@@ -3,29 +3,20 @@
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
 static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
+#/**/ define/**/ __BEGIN_DECLS      extern "C" {
+#/**/ define/**/ __END_DECLS        }
 #/**/ undef  /**/ __cplusplus
-#/**/ define /**/ __cplusplus       202012L
-#/**/ define /**/ __Begin           extern "C" {
-#/**/ define /**/ __End             }
+#/**/ define /**/ __cplusplus       201812L
 
 #include <cstdlib>
 #include <cstdio>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
 #include <unistd.h>
-#include <filesystem>
-#include <iostream>
-#include <fstream>
-#include <ostream>
+#include <cstddef>
 #include <string>
-#include <array>
 #include <vector>
-#include <utility>
-#include <thread>
-#include <exception>
-#include <new>
+
 #include <zlib.hh>
+#include <magick.hh>
 
 #define __const           __attribute__((const))
 #define __flat            __attribute__((flatten))
@@ -47,41 +38,34 @@ static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
 #define perr(...) \
     std::cerr << fg("255", "0", "0") << __VA_ARGS__ << sgr() << std::endl;
 
+typedef struct {
+    unsigned int	width;
+    unsigned int	height;
+} Resolution;
+
 enum MagicID {
     MTK_LOGOBIN,
     ZLIB_STREAM,
     PNG_PICTURE,
 };
 
-typedef struct {
-    unsigned int	width;
-    unsigned int	height;
-} Geometry;
-
-typedef struct {
-    std::string		zlibFile;
-    std::string		rgbaFile;
-    std::string		pngFile;
-    unsigned long	offset;
-} Image;
-
-class Builder : public zlib::ZConverter {
+class Builder : public ZHandle, public Converter {
     public:
-        bool unpack(std::string dstDir, std::string logoBin);
-        bool repack(std::string logoBin, std::string srcDir);
+        int unpack(std::string logoBin, std::string dstDir);
+        int pack(std::string logoBin, std::string srcDir);
 
     protected:
-        Geometry geometry;
-        std::vector<Image> images;
-        bool verify(MagicID id, std::string path);
-        bool extract(std::string path);
-        bool evaluate(std::string path);
-        bool convert(std::string path);
-        bool insert(std::string path, unsigned long offset);
+        bool compare(const unsigned char *need, const unsigned char *have);
+        void copy(std::string dest, std::string src);
+        bool verify(MagicID id, std::string fpath);
+        bool extract(std::string logoBin);
+        bool sizehint(std::string dir);
+        bool exists(std::string path);
+        std::string pwd(void);
+        bool convert(void);
+        bool insert(void);
 
     private:
-        std::string pwd(void);
-        bool checkexist(std::string path);
-        void copy(std::string dest, std::string src);
-        bool compare(const Byte *need, const Byte *have);
+        Resolution geometry;
+        std::vector<std::string> images;
 };
