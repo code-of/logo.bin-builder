@@ -93,6 +93,27 @@ bool Builder::compare(unsigned const char *need, unsigned const char *have)
     return result;
 }
 
+void Builder::geometry(string fpath, Resolution *resolution)
+{
+    unsigned int pixels = 0;
+    fs::path path;
+
+    path.assign(fpath);
+    pixels = fs::file_size(path) / 4;
+
+    for (int i = 0; i < 29; i++) {
+        if (pixels == (Resolutions[i].width * Resolutions[i].height)) {
+            resolution->width = Resolutions[i].width;
+            resolution->height = Resolutions[i].height;
+            return;
+        } else {
+            resolution->width = 0;
+            resolution->height = 0;
+        }
+    }
+    return;
+}
+
 void Builder::copy(string dest, string src)
 {
     try {
@@ -137,6 +158,48 @@ bool Builder::verify(MagicID id, string fpath)
     return result;
 }
 
+long int Builder::filesize(string fpath)
+{
+    long int length = 0;
+    FILE *file = fopen(fpath.c_str(), "rb");
+
+    if (file) {
+        fseek(file, 0, SEEK_END);
+        length = ftell(file);
+        fclose(file);
+        return length;
+    } else {
+        perr("Couldnt open: " << fpath);
+        return 0L;
+    }
+}
+
+char *Builder::file2bytes(string fpath)
+{
+    void *bytes;
+    long int length = this->filesize(fpath);
+
+    if (0 < length) {
+        FILE *file = fopen(fpath.c_str(), "rb");
+        if (file) {
+            bytes = calloc(length, sizeof(unsigned char));
+            if (fread(bytes, 1, length, file)) {
+                fclose(file);
+                return (char *)bytes;
+            } else {
+                fclose(file);
+                free(bytes);
+                perr("Didnt read any bytes from: " << fpath);
+                return NULL;
+            }
+        }
+    } else {
+        perr("Couldnt open: " << fpath);
+        return NULL;
+    }
+    return NULL;
+}
+
 bool Builder::extract(string logoBin)
 {
     if (this->zscan(logoBin))
@@ -144,28 +207,6 @@ bool Builder::extract(string logoBin)
     else
         return false;
 }
-
-void Builder::geometry(string fpath, Resolution *resolution)
-{
-    unsigned int pixels = 0;
-    fs::path path;
-
-    path.assign(fpath);
-    pixels = fs::file_size(path) / 4;
-
-    for (int i = 0; i < 29; i++) {
-        if (pixels == (Resolutions[i].width * Resolutions[i].height)) {
-            resolution->width = Resolutions[i].width;
-            resolution->height = Resolutions[i].height;
-            return;
-        } else {
-            resolution->width = 0;
-            resolution->height = 0;
-        }
-    }
-    return;
-}
-
 
 bool Builder::exists(string path)
 {
@@ -176,11 +217,6 @@ bool Builder::exists(string path)
         return true;
     else
         return false;
-}
-
-string Builder::pwd(void)
-{
-    return fs::current_path().c_str();
 }
 
 bool Builder::convert(int ctx)
@@ -209,13 +245,23 @@ bool Builder::convert(int ctx)
         for (size_t iter = 0; iter < this->images.size(); iter++) {
             string file = this->images.at(iter);
             this->to_rgba(file);
-            this->images.at(iter).assign(file.replace(file.end() - 3, file.end(), "rgba").c_str());
-            if (EXIT_SUCCESS == this->zdeflate(this->images.at(iter), file.replace(file.end() - 3, file.end(), "zlib").c_str()))
+            this->images.at(iter).assign(file.replace(file.end() - 3,
+                                                      file.end(),
+                                                      "rgba").c_str());
+            if (EXIT_SUCCESS == this->zdeflate(this->images.at(iter),
+                                               file.replace(file.end() - 4,
+                                                            file.end(),
+                                                            "zlib").c_str()))
                 fs::remove(this->images.at(iter));
         }
         return true;
     }
     return false;
+}
+
+string Builder::pwd(void)
+{
+    return fs::current_path().c_str();
 }
 
 bool Builder::insert(void)
@@ -226,6 +272,32 @@ bool Builder::insert(void)
         string file = p.path().string();
         if (0 == file.substr(file.find_last_of(".") + 1).compare("zlib"))
             zblob->push_back(file);
+    }
+
+    if (this->exists(".logo.bak")) {
+        FILE *logoBin = fopen(".logo.bak", "rb+");
+        if (logoBin) {
+            for (size_t iter = 0; iter < zblob->size(); iter++) {
+                long int offset = 0;
+                char *data = this->file2bytes(zblob->at(iter));
+                fs::remove(zblob->at(iter));
+                string blob = zblob->at(iter);
+                string number = blob.replace(blob.end() - 5, blob.end(), "");
+                offset = strtol(number.substr(number.find_last_of("/") + 1).c_str(), NULL, 0);
+                fseek(logoBin, offset, SEEK_SET);
+                while (0 != *data) {
+                    __putc_unlocked_body(*data, logoBin);
+                    data++;
+                }
+            }
+            fclose(logoBin);
+        } else {
+            perr("Unable to open backup-file: .logo.bak ...");
+            return false;
+        }
+    } else {
+        perr("Cannot find backup-file: .logo.bak ...");
+        return false;
     }
     return true;
 }
@@ -238,10 +310,15 @@ int main(int argc, char **argv)
     argc--;
     argv++;
     Builder builder;
-    if (2 == argc)
-        return builder.unpack(argv[0], argv[1]);
-    else
+    if (3 == argc) {
+        if (0 == strcmp("unpack", argv[0]))
+            return builder.unpack(argv[1], argv[2]);
+        if (0 == strcmp("pack", argv[0]))
+            return builder.pack(argv[1], argv[2]);
         return EXIT_FAILURE;
+    } else {
+        return EXIT_FAILURE;
+    }
 }
 
 #endif

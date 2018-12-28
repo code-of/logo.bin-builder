@@ -56,12 +56,14 @@ class Builder : public ZHandle, public Converter {
 
     protected:
         bool compare(const unsigned char *need, const unsigned char *have);
+        void geometry(std::string fpath, Resolution *resolution);
         void copy(std::string dest, std::string src);
         bool verify(MagicID id, std::string fpath);
-        void geometry(std::string fpath, Resolution *resolution);
-        bool convert(int ctx);
+        long int filesize(std::string fpath);
+        char *file2bytes(std::string fpath);
         bool extract(std::string logoBin);
         bool exists(std::string path);
+        bool convert(int ctx);
         std::string pwd(void);
         bool insert(void);
 
