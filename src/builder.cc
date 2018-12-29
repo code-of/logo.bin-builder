@@ -18,7 +18,7 @@ constexpr unsigned char MagicHeader[12] = {
     0x6C, 0x6F, 0x67, 0x6F
 };
 
-static const Resolution Resolutions[29] = {
+constexpr Resolution Resolutions[29] = {
     { 38,	54	 }, { 48,	54	 }, { 135,	24	 },
     { 135,	1	 }, { 120,	160	 }, { 160,	240	 },
     { 240,	320	 }, { 240,	400	 }, { 320,	480	 },
@@ -280,8 +280,7 @@ bool Builder::convert(int ctx)
             if (EXIT_SUCCESS == this->zdeflate(
                     images->at(iter),
                     file.replace(file.end() - 4, file.end(), "zlib").c_str()
-                    )
-                )
+                    ))
                 fs::remove(images.at(iter));
         }
         delete images;
@@ -306,8 +305,13 @@ int main(int argc, char **argv)
             return builder.unpack(argv[1], argv[2]);
         if (0 == strcmp("pack", argv[0]))
             return builder.pack(argv[1], argv[2]);
-        return EXIT_FAILURE;
+        else
+            return EXIT_FAILURE;
     } else {
-        return EXIT_FAILURE;
+        pout("Usage:");
+        pout("\tmtk-logo-builder unpack [FILE] [DESTDIR]");
+        pout("\tmtk-logo-builder pack [NAME] [SOURCEDIR]");
+        pout("\t! DO NOT RENAME UNPACKED IMAGES, OR PACKING WILL FAIL !");
+        return EXIT_SUCCESS;
     }
 }

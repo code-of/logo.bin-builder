@@ -59,7 +59,4 @@ class Builder : public ZHandle, public Converter {
         bool insert(std::string path);
         bool convert(int ctx);
         std::string pwd(void);
-
-    private:
-        std::vector<std::string> images;
 };
