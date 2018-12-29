@@ -31,14 +31,14 @@ constexpr Resolution Resolutions[29] = {
     { 1200, 1600 }, { 1200, 1920 },
 };
 
-int Builder::unpack(string logoFile, string dstDir)
+int Builder::unpack(string logoFile)
 {
     fs::path logoBin = fs::absolute(logoFile.c_str());
 
     if (true == this->verify(logoBin)) {
-        if (false == this->exists(dstDir))
-            fs::create_directory(dstDir);
-        if (EXIT_SUCCESS == chdir(dstDir.c_str())) {
+        if (false == this->exists("out"))
+            fs::create_directory("out");
+        if (EXIT_SUCCESS == chdir("out")) {
             if (true == this->extract(logoBin)) {
                 if (true == this->convert(0)) {
                     this->copy(".logo.bak", logoBin);
@@ -52,16 +52,18 @@ int Builder::unpack(string logoFile, string dstDir)
     return EXIT_FAILURE;
 }
 
-int Builder::pack(string logoFile, string srcDir)
+int Builder::pack(string srcDir)
 {
     if (true == this->exists(srcDir)) {
         if (EXIT_SUCCESS == chdir(srcDir.c_str())) {
             if (true == this->convert(1)) {
-                this->copy(logoFile, ".logo.bak");
-                if (true == this->insert(logoFile))
+                this->copy("logo.bin", ".logo.bak");
+                if (true == this->insert())
                     return EXIT_SUCCESS;
             }
         }
+    } else {
+        perr("No such directory: " << srcDir);
     }
     return EXIT_FAILURE;
 }
@@ -191,55 +193,6 @@ bool Builder::exists(string path)
         return false;
 }
 
-bool Builder::insert(string path)
-{
-    vector<string> *zblob = new vector<string>;
-
-    for (auto& p: fs::directory_iterator(this->pwd())) {
-        string file = p.path().string();
-
-        if (0 == file.substr(file.find_last_of(".") + 1).compare("zlib"))
-            zblob->push_back(file);
-    }
-
-    if (this->exists(path.c_str())) {
-        FILE *logoBin = fopen(path.c_str(), "rb+");
-
-        if (logoBin) {
-            for (size_t iter = 0; iter < zblob->size(); iter++) {
-                string blob = zblob->at(iter);
-                string number = blob.replace(blob.end() - 5, blob.end(), "");
-                char *data = this->file2bytes(blob);
-                long int offset = strtol(
-                    number.substr(number.find_last_of("/") + 1).c_str(),
-                    NULL,
-                    0
-                    );
-                fs::remove(blob);
-
-                if (NULL != data) {
-                    fseek(logoBin, offset, SEEK_SET);
-                    while (0 != *data) {
-                        __putc_unlocked_body(*data, logoBin);
-                        data++;
-                    }
-                }
-            }
-            fclose(logoBin);
-            delete zblob;
-            return true;
-        } else {
-            perr("Unable to open file: " << path);
-            delete zblob;
-            return false;
-        }
-    } else {
-        perr("Cannot find new file: " << path);
-        delete zblob;
-        return false;
-    }
-}
-
 bool Builder::convert(int ctx)
 {
     vector<string> *images = new vector<string>;
@@ -290,6 +243,55 @@ bool Builder::convert(int ctx)
     return false;
 }
 
+bool Builder::insert(void)
+{
+    vector<string> *zblob = new vector<string>;
+
+    for (auto& p: fs::directory_iterator(this->pwd())) {
+        string file = p.path().string();
+
+        if (0 == file.substr(file.find_last_of(".") + 1).compare("zlib"))
+            zblob->push_back(file);
+    }
+
+    if (this->exists("logo.bin")) {
+        FILE *logoBin = fopen("logo.bin", "rb+");
+
+        if (logoBin) {
+            for (size_t iter = 0; iter < zblob->size(); iter++) {
+                string blob = zblob->at(iter);
+                char *data = this->file2bytes(blob);
+                blob.replace(blob.end() - 5, blob.end(), "");
+                long int offset = strtol(
+                    blob.substr(blob.find_last_of("/") + 1).c_str(),
+                    NULL,
+                    0
+                    );
+                fs::remove(zblob->at(iter));
+
+                if (NULL != data) {
+                    fseek(logoBin, offset, SEEK_SET);
+                    while (0 != *data) {
+                        __putc_unlocked_body(*data, logoBin);
+                        data++;
+                    }
+                }
+            }
+            fclose(logoBin);
+            delete zblob;
+            return true;
+        } else {
+            perr("Unable to open new logo.bin");
+            delete zblob;
+            return false;
+        }
+    } else {
+        perr("Cannot find new logo.bin");
+        delete zblob;
+        return false;
+    }
+}
+
 string Builder::pwd(void)
 {
     return fs::current_path().c_str();
@@ -300,18 +302,15 @@ int main(int argc, char **argv)
     argc--;
     argv++;
     Builder builder;
-    if (3 == argc) {
+    if (2 == argc) {
         if (0 == strcmp("unpack", argv[0]))
-            return builder.unpack(argv[1], argv[2]);
+            return builder.unpack(argv[1]);
         if (0 == strcmp("pack", argv[0]))
-            return builder.pack(argv[1], argv[2]);
-        else
-            return EXIT_FAILURE;
-    } else {
-        pout("Usage:");
-        pout("\tmtk-logo-builder unpack [FILE] [DESTDIR]");
-        pout("\tmtk-logo-builder pack [NAME] [SOURCEDIR]");
-        pout("\t! DO NOT RENAME UNPACKED IMAGES, OR PACKING WILL FAIL !");
-        return EXIT_SUCCESS;
+            return builder.pack(argv[1]);
     }
+    pout("Usage:");
+    pout("\tmtk-logo-builder unpack [FILE]\t- will unpack [FILE] to a directory 'out/'.");
+    pout("\tmtk-logo-builder pack [SRCDIR]\t- will create 'logo.bin' from files in [SRCDIR].");
+    pout("\t! DO NOT RENAME UNPACKED IMAGES, OR PACKING WILL FAIL !");
+    return EXIT_SUCCESS;
 }

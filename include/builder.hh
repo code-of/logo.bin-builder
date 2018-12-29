@@ -44,8 +44,8 @@ typedef struct {
 
 class Builder : public ZHandle, public Converter {
     public:
-        int unpack(std::string logoFile, std::string dstDir);
-        int pack(std::string logoFile, std::string srcDir);
+        int unpack(std::string logoFile);
+        int pack(std::string srcDir);
 
     protected:
         bool compare(const unsigned char *need, const unsigned char *have);
@@ -56,7 +56,7 @@ class Builder : public ZHandle, public Converter {
         bool extract(std::string logoBin);
         bool verify(std::string fpath);
         bool exists(std::string path);
-        bool insert(std::string path);
         bool convert(int ctx);
+        bool insert(void);
         std::string pwd(void);
 };
