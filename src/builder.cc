@@ -57,8 +57,8 @@ int Builder::pack(string logoFile, string srcDir)
     if (true == this->exists(srcDir)) {
         if (EXIT_SUCCESS == chdir(srcDir.c_str())) {
             if (true == this->convert(1)) {
-                this->copy(logoFile.string(), ".logo.bak");
-                if (true == this->insert(logoFile.string()))
+                this->copy(logoFile, ".logo.bak");
+                if (true == this->insert(logoFile))
                     return EXIT_SUCCESS;
             }
         }
@@ -242,7 +242,7 @@ bool Builder::insert(string path)
 
 bool Builder::convert(int ctx)
 {
-    vectory<string> *images = new vector<string>;
+    vector<string> *images = new vector<string>;
 
     for (auto& p: fs::directory_iterator(this->pwd())) {
         string file = p.path().string();
@@ -281,7 +281,7 @@ bool Builder::convert(int ctx)
                     images->at(iter),
                     file.replace(file.end() - 4, file.end(), "zlib").c_str()
                     ))
-                fs::remove(images.at(iter));
+                fs::remove(images->at(iter));
         }
         delete images;
         return true;
