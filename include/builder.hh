@@ -10,11 +10,10 @@ static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
 
 #include <cstdlib>
 #include <cstdio>
-#include <unistd.h>
 #include <cstddef>
 #include <string>
 #include <vector>
-
+#include <unistd.h>
 #include <zlib.hh>
 #include <magick.hh>
 
@@ -43,12 +42,6 @@ typedef struct {
     unsigned int	height;
 } Resolution;
 
-enum MagicID {
-    MTK_LOGOBIN,
-    ZLIB_STREAM,
-    PNG_PICTURE,
-};
-
 class Builder : public ZHandle, public Converter {
     public:
         int unpack(std::string logoFile, std::string dstDir);
@@ -58,14 +51,14 @@ class Builder : public ZHandle, public Converter {
         bool compare(const unsigned char *need, const unsigned char *have);
         void geometry(std::string fpath, Resolution *resolution);
         void copy(std::string dest, std::string src);
-        bool verify(MagicID id, std::string fpath);
         long int filesize(std::string fpath);
         char *file2bytes(std::string fpath);
         bool extract(std::string logoBin);
+        bool verify(std::string fpath);
         bool exists(std::string path);
+        bool insert(std::string path);
         bool convert(int ctx);
         std::string pwd(void);
-        bool insert(void);
 
     private:
         std::vector<std::string> images;

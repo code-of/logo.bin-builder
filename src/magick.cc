@@ -1,10 +1,10 @@
-#/* !ffmpeg.cc */
+#/* !magick.cc */
 #// (c) 2018 MIT License
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
-#include <Magick++.h>
-#include <iostream>
 #include <magick.hh>
+#include <Magick++.h>
+
 using namespace std;
 using namespace Magick;
 
@@ -33,14 +33,10 @@ void Converter::to_png(string fpath, int width, int height)
     }
 }
 
-void Converter::to_rgba(string fpath /*, int width, int height*/)
+void Converter::to_rgba(string fpath)
 {
     Image image;
 
-/*
-    image.size(to_string(width).append("x").append(to_string(height)).c_str());
-    image.depth(8);
-*/
     try {
         image.read(fpath.c_str());
         image.magick("RGBA");

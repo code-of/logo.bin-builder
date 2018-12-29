@@ -7,11 +7,12 @@ static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
 #/**/ define/**/ __END_DECLS	    }
 #/**/ undef  /**/ __cplusplus
 #/**/ define /**/ __cplusplus       201812L
+#include <iostream>
 #include <string>
 
 class Converter {
     public:
         Converter(void);
         void to_png(std::string fpath, int width, int height);
-        void to_rgba(std::string fpath /*, int width, int height*/);
+        void to_rgba(std::string fpath);
 };

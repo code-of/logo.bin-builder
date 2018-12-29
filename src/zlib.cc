@@ -242,26 +242,3 @@ void ZHandle::zfini(z_stream *stream, unsigned int mode)
     }
     return;
 }
-
-#if 0
-
-int main(int argc, char **argv)
-{
-    argc--;
-    argv++;
-    ZHandle Converter;
-    if (1 == argc) {
-        return Converter.zscan(argv[0]);
-    } else if (3 == argc) {
-        if (0 == strcmp("inflate", *argv))
-            return Converter.zinflate(argv[1], argv[2]);
-        else if (0 == strcmp("deflate", *argv))
-            return Converter.zdeflate(argv[1], argv[2]);
-        else
-            return EXIT_FAILURE;
-    } else {
-        return EXIT_FAILURE;
-    }
-}
-
-#endif
