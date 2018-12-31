@@ -1,16 +1,15 @@
 ninja_required_version = 1.8.0
 builddir = /tmp
 
-cflags = -std=gnu++2a -Wall -pedantic -Wno-deprecated
-cflags = $cflags -m64 -mtune=generic -O2 -pthread -fopenmp
-cflags = $cflags -DMAGICKCORE_HDRI_ENABLE=1 -DMAGICKCORE_QUANTUM_DEPTH=16
-cflags = $cflags -I./include -I/usr/include/ImageMagick-7
+cflags = -std=gnu++2a -Wall -pedantic -Wno-deprecated -m64 -mtune=generic
+cflags = $cflags  -O2 -pthread -fopenmp -fstack-protector-strong -fno-plt
+cflags = $cflags  -I./include -I/usr/include/GraphicsMagick
 
 ldflags = -Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now
-ldflags = $ldflags -lz -lstdc++fs -lMagick++-7.Q16HDRI
-ldflags = $ldflags -lMagickWand-7.Q16HDRI -lMagickCore-7.Q16HDRI  
+ldflags = $ldflags -lGraphicsMagick++ -lGraphicsMagick
+ldflags = $ldflags -lstdc++fs -lm -lz -lpthread
 
 rule cc
   command = g++ $cflags $in $ldflags -o $out
 
-build mtk-logo-builder: cc src/zlib.cc src/magick.cc src/builder.cc
+build mtk-logo-builder: cc src/zlib.cc src/gmagick.cc src/builder.cc

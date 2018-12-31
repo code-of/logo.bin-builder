@@ -15,21 +15,10 @@ static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
 #include <vector>
 #include <unistd.h>
 #include <zlib.hh>
-#include <magick.hh>
-
-#define __const           __attribute__((const))
-#define __flat            __attribute__((flatten))
-#define __notnull(...)    __attribute__((nonnull ## __VA_ARGS__)))
-#define __section(label)  __attribute__((section(#label)))
+#include <gmagick.hh>
 
 #define fg(r, g, b)       "\x1b[38:2:" << r << ":" << g << ":" << b << "m"
-#define bg(r, g, b)       "\x1b[48:2:" << r << ":" << g << ":" << b << "m"
 #define sgr()             "\x1b(B\x1b[m"
-#define bold()            "\x1b[1m"
-#define smul()            "\x1b[4m"
-#define sitm()            "\x1b[3m"
-#define el1()             "\x1b[1K"
-#define up1()             "\x1b[A"
 
 #define pout(...) \
     std::cout << __VA_ARGS__ << endl;
@@ -51,9 +40,9 @@ class Builder : public ZHandle, public Converter {
         bool compare(const unsigned char *need, const unsigned char *have);
         void geometry(std::string fpath, Resolution *resolution);
         void copy(std::string dest, std::string src);
-        long int filesize(std::string fpath);
-        char *file2bytes(std::string fpath);
+        long int fsize(std::string fpath);
         bool extract(std::string logoBin);
+        void *ftobuf(std::string fpath);
         bool verify(std::string fpath);
         bool exists(std::string path);
         bool convert(int ctx);

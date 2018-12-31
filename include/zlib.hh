@@ -9,27 +9,23 @@ static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
 #/**/ define /**/ __cplusplus       201812L
 #include <cstdlib>
 #include <cstdio>
-#include <iostream>
-#include <unistd.h>
 #include <cstddef>
 #include <string>
-#include <zlib.h>
 
-enum ZlibCompressionLevel {
+
+typedef enum ZlibCompressionLevel {
     ZLIB_NONE	= ~(0x00),
     ZLIB_NORM	= (0x00),
     ZLIB_FAST	= (0x01),
     ZLIB_BEST	= (0x09),
-};
+} ZlibCompression;
 
 class ZHandle {
     public:
-        int zinflate(std::string inFile, std::string outFile);
-        int zdeflate(std::string inFile, std::string outFile);
-        int zscan(std::string binFile);
+        int zlib_inflate(std::string inFile, std::string outFile);
+        int zlib_deflate(std::string inFile, std::string outFile, ZlibCompression level);
+        int zlib_scan(std::string inFile, int level);
 
-    protected:
-        bool ztry(std::string binary, long int size, long int offset);
-        void zini(z_stream *stream, unsigned int mode);
-        void zfini(z_stream *stream, unsigned int mode);
+    private:
+        bool zlib_try(std::string inFile, long int size, long int offset);
 };

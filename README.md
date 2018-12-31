@@ -8,7 +8,7 @@
 
     - gcc (version >= 7.x)
     - zlib (any version)
-    - imagemagick (version >= 7.x)
+    - graphicsmagick (version >= 1.2)
     - ninja (version >= 1.8)
 
 ---

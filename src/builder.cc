@@ -12,23 +12,25 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-constexpr unsigned char MagicHeader[12] = {
+static constexpr unsigned char MagicHeader[12] = {
     0x88, 0x16, 0x88, 0x58,
     0x6D, 0x78, 0x13, 0x00,
     0x6C, 0x6F, 0x67, 0x6F
 };
 
-constexpr Resolution Resolutions[29] = {
-    { 38,	54	 }, { 48,	54	 }, { 135,	24	 },
-    { 135,	1	 }, { 120,	160	 }, { 160,	240	 },
-    { 240,	320	 }, { 240,	400	 }, { 320,	480	 },
-    { 320,	570	 }, { 360,	640	 }, { 480,	640	 },
-    { 540,	960	 }, { 640,	360	 }, { 480,	800	 },
-    { 480,	854	 }, { 600,	800	 }, { 576,	1024 },
-    { 600,	1024 }, { 720,	1280 }, { 768,	1024 },
-    { 864,	1152 }, { 900,	1440 }, { 1024, 1280 },
-    { 1050, 1400 }, { 1050, 1680 }, { 1080, 1920 },
-    { 1200, 1600 }, { 1200, 1920 },
+static constexpr Resolution Resolutions[45] = {
+    { 15,	27	 }, { 27,	36	 }, { 30,	27	 }, { 32,	105	 },
+    { 36,	51	 }, { 38,	54	 }, { 45,	139	 }, { 48,	54	 },
+    { 57,	64	 }, { 63,	105	 }, { 84,	121	 }, { 102,	1	 },
+    { 108,	121	 }, { 135,	24	 }, { 135,	1	 }, { 138,	20	 },
+    { 120,	160	 }, { 160,	240	 }, { 163,	29	 }, { 169,	28	 },
+    { 218,	51	 }, { 240,	320	 }, { 240,	400	 }, { 304,	52	 },
+    { 320,	480	 }, { 320,	570	 }, { 360,	640	 }, { 480,	640	 },
+    { 540,	960	 }, { 640,	360	 }, { 480,	800	 }, { 480,	853	 },
+    { 600,	800	 }, { 576,	1024 }, { 600,	1024 }, { 720,	1280 },
+    { 768,	1024 }, { 864,	1152 }, { 900,	1440 }, { 1024, 1280 },
+    { 1050, 1400 }, { 1050, 1680 }, { 1080, 1920 }, { 1200, 1600 },
+    { 1200, 1920 },
 };
 
 int Builder::unpack(string logoFile)
@@ -89,7 +91,7 @@ void Builder::geometry(string fpath, Resolution *resolution)
     path.assign(fpath);
     pixels = fs::file_size(path) / 4;
 
-    for (int i = 0; i < 29; i++) {
+    for (int i = 0; i < 45; i++) {
         if (pixels == (Resolutions[i].width * Resolutions[i].height)) {
             resolution->width = Resolutions[i].width;
             resolution->height = Resolutions[i].height;
@@ -111,7 +113,7 @@ void Builder::copy(string dest, string src)
     }
 }
 
-long int Builder::filesize(string fpath)
+long int Builder::fsize(string fpath)
 {
     long int length = 0;
     FILE *file = fopen(fpath.c_str(), "rb");
@@ -127,41 +129,42 @@ long int Builder::filesize(string fpath)
     }
 }
 
-char *Builder::file2bytes(string fpath)
+bool Builder::extract(string logoBin)
 {
-    void *bytes;
-    long int length = this->filesize(fpath);
+    if (this->zlib_scan(logoBin, ZLIB_BEST))
+        return true;
+    else
+        return false;
+}
+
+void *Builder::ftobuf(string fpath)
+{
+    void *buf;
+    long int length = this->fsize(fpath);
 
     if (0 < length) {
         FILE *file = fopen(fpath.c_str(), "rb");
 
         if (file) {
-            bytes = calloc(length, sizeof(unsigned char));
+            buf = calloc(length, sizeof(unsigned char));
 
-            if (fread(bytes, 1, length, file)) {
+            if (fread(buf, 1, length, file)) {
                 fclose(file);
-                return (char *)bytes;
+                return buf;
             } else {
                 fclose(file);
-                free(bytes);
+                free(buf);
                 perr("Didnt read any bytes from: " << fpath);
-                return NULL;
             }
+        } else {
+            perr("Couldnt open: " << fpath);
         }
     } else {
-        perr("Couldnt open: " << fpath);
-        return NULL;
+        perr("Size of File equal 0: " << fpath);
     }
     return NULL;
 }
 
-bool Builder::extract(string logoBin)
-{
-    if (this->zscan(logoBin))
-        return true;
-    else
-        return false;
-}
 
 bool Builder::verify(string fpath)
 {
@@ -216,7 +219,8 @@ bool Builder::convert(int ctx)
             this->geometry(file, &resolution);
 
             if (resolution.height && resolution.width)
-                this->to_png(file, resolution.width, resolution.height);
+                this->rgba_to_png(file, resolution.width, resolution.height);
+
             fs::remove(file);
         }
         return true;
@@ -225,16 +229,15 @@ bool Builder::convert(int ctx)
     if (1 == ctx) {
         for (size_t iter = 0; iter < images->size(); iter++) {
             string file = images->at(iter);
-            this->to_rgba(file);
-            images->at(iter).assign(
-                file.replace(file.end() - 3, file.end(), "rgba").c_str()
-                );
+            this->png_to_rgba(file);
+            file.replace(file.end() - 3, file.end(), "rgba");
+            images->at(iter).assign(file.c_str());
+            file.replace(file.end() - 4, file.end(), "zlib");
 
-            if (EXIT_SUCCESS == this->zdeflate(
-                    images->at(iter),
-                    file.replace(file.end() - 4, file.end(), "zlib").c_str()
-                    ))
-                fs::remove(images->at(iter));
+            if (EXIT_SUCCESS != this->zlib_deflate(images->at(iter), file, ZLIB_BEST))
+                perr("Could not deflate image: " << images->at(iter));
+
+            fs::remove(images->at(iter));
         }
         delete images;
         return true;
@@ -259,34 +262,39 @@ bool Builder::insert(void)
 
         if (logoBin) {
             for (size_t iter = 0; iter < zblob->size(); iter++) {
-                string blob = zblob->at(iter);
-                char *data = this->file2bytes(blob);
-                blob.replace(blob.end() - 5, blob.end(), "");
-                long int offset = strtol(
-                    blob.substr(blob.find_last_of("/") + 1).c_str(),
-                    NULL,
-                    0
-                    );
-                fs::remove(zblob->at(iter));
+                char *data = NULL;
+                string zname = zblob->at(iter);
+                data = (char *)this->ftobuf(zname);
 
                 if (NULL != data) {
+                    fs::remove(zname);
+                    zname.replace(zname.end() - 5, zname.end(), "");
+                    long offset = strtol(
+                        zname.substr(zname.find_last_of("/") + 1).c_str(),
+                        NULL, 0);
                     fseek(logoBin, offset, SEEK_SET);
-                    while (0 != *data) {
-                        __putc_unlocked_body(*data, logoBin);
-                        data++;
-                    }
+
+                    for (int p = 0; 0 != data[p]; p++)
+                        __putc_unlocked_body(data[p], logoBin);
+
+                    free((void *)data);
+                } else {
+                    perr("Didnt read any bytes...");
+                    fclose(logoBin);
+                    delete zblob;
+                    return false;
                 }
             }
             fclose(logoBin);
             delete zblob;
             return true;
         } else {
-            perr("Unable to open new logo.bin");
+            perr("Unable to open 'logo.bin'");
             delete zblob;
             return false;
         }
     } else {
-        perr("Cannot find new logo.bin");
+        perr("Cannot find 'logo.bin'");
         delete zblob;
         return false;
     }
