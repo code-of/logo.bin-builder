@@ -2,14 +2,27 @@ ninja_required_version = 1.8.0
 builddir = /tmp
 
 cflags = -std=gnu++2a -Wall -pedantic -Wno-deprecated -m64 -mtune=generic
-cflags = $cflags  -O2 -pthread -fopenmp -fstack-protector-strong -fno-plt
-cflags = $cflags  -I./include -I/usr/include/GraphicsMagick
+cflags = $cflags -O2 -Os -pthread -fopenmp -fstack-protector-strong -fno-plt
+cflags = $cflags -I./include -I/usr/include/GraphicsMagick
 
 ldflags = -Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now
 ldflags = $ldflags -lGraphicsMagick++ -lGraphicsMagick
-ldflags = $ldflags -lstdc++fs -lm -lz -lpthread
+ldflags = $ldflags -lm -lz -lpthread
 
 rule cc
-  command = g++ $cflags $in $ldflags -o $out
+  command = g++ $cflags -c $in -o $out
+  description = CC >> $out
 
-build mtk-logo-builder: cc src/zlib.cc src/gmagick.cc src/builder.cc
+rule link
+  command = g++ $in $ldflags -o $out && rm -f *.o
+  description = LD >> $out
+
+build cfile.o: cc src/cfile.cc
+
+build zhandle.o: cc src/zhandle.cc
+
+build converter.o: cc src/converter.cc
+
+build builder.o: cc src/builder.cc
+
+build mtk-logo-builder: link cfile.o zhandle.o converter.o builder.o

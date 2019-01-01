@@ -2,10 +2,14 @@
 #// (c) 2018 MIT License
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
-#include <zlib.hh>
+#include <cstdlib>
+#include <cstdio>
+#include <cstddef>
+#include <string>
 #include <unistd.h>
 #include <fcntl.h>
 #include <zlib.h>
+#include <zhandle.hh>
 
 using namespace std;
 

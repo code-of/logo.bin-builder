@@ -2,8 +2,10 @@
 #// (c) 2018 MIT License
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
-#include <gmagick.hh>
+#include <string>
+#include <iostream>
 #include <Magick++.h>
+#include <converter.hh>
 
 using namespace std;
 using namespace Magick;
@@ -30,6 +32,7 @@ void Converter::rgba_to_png(string fpath, int width, int height)
         image.write(fpath.replace(fpath.end() - 4, fpath.end(), "png").c_str());
     } catch (Exception &e) {
         cerr << e.what() << endl;
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -43,5 +46,6 @@ void Converter::png_to_rgba(string fpath)
         image.write(fpath.replace(fpath.end() - 3, fpath.end(), "rgba").c_str());
     } catch (Exception &e) {
         cerr << e.what() << endl;
+        exit(EXIT_FAILURE);
     }
 }

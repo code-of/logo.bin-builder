@@ -3,15 +3,8 @@
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
 static_assert(__GNUG__, "Your compiler is not supporting GnuExtensions !");
-#/**/ define/**/ __BEGIN_DECLS      extern "C" {
-#/**/ define/**/ __END_DECLS	    }
-#/**/ undef  /**/ __cplusplus
-#/**/ define /**/ __cplusplus       201812L
-#include <cstdlib>
-#include <cstdio>
-#include <cstddef>
-#include <string>
 
+#include <string>
 
 typedef enum ZlibCompressionLevel {
     ZLIB_NONE	= ~(0x00),
