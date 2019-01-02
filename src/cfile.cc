@@ -1,4 +1,4 @@
-#/* !cfilesystem.cc */
+#/* !cfile.cc */
 #// (c) 2019 MIT License
 #// Marcel Bobolz
 #// <ergotamin.source@gmail.com>
@@ -20,23 +20,37 @@ namespace file {
     {
         this->file = NULL;
     }
+
     File::File(string path, string mode)
     {
         this->file = fopen(path.c_str(), mode.c_str());
     }
+
     void File::open(string path, string mode)
     {
         this->file = fopen(path.c_str(), mode.c_str());
+    }
+
+    bool File::eof(void)
+    {
+        return feof(this->file);
     }
     bool File::is_open(void)
     {
         return NULL != this->file;
     }
+
+    bool File::has_error(void)
+    {
+        return ferror(this->file);
+    }
+
     void File::close(void)
     {
         fflush(this->file);
         fclose(this->file);
     }
+
     long File::size(void)
     {
         fseek(this->file, 0, SEEK_END);
@@ -44,18 +58,22 @@ namespace file {
         fseek(this->file, 0, SEEK_SET);
         return length;
     }
+
     long File::tell(void)
     {
         return ftell(this->file);
     }
+
     long File::seek(long offset)
     {
         return (long)fseek(this->file, offset, SEEK_SET);
     }
+
     void File::putc(char c)
     {
         fputc(c, this->file);
     }
+
     unsigned char File::getc(void)
     {
         return fgetc(this->file);
@@ -66,20 +84,14 @@ namespace file {
         return (long)fread(dest, sizeof(unsigned char), length, this->file);
     }
 
+    long File::write(const void *data, long length)
+    {
+        return (long)fwrite(data, sizeof(unsigned char), length, this->file);
+    }
+
     ostream& error(string what)
     {
         return cerr << "\x1b[38:2:255:20:60m" << what << "\x1b(B\x1b[m" << endl;
-    }
-
-    template<typename T, typename ... Targs>
-    ostream& error(string what, T arg, Targs... Vargs)
-    {
-        if (nullptr != arg) {
-            what.append(arg);
-            return error(what, Vargs ...);
-        } else {
-            return error(what);
-        }
     }
 
     void trash(string path)
@@ -111,7 +123,7 @@ namespace file {
 
     void *slurpfile(string fpath)
     {
-        void *buf;
+        void *buf = NULL;
 
         File file(fpath.c_str(), "rb");
 

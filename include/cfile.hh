@@ -14,7 +14,9 @@ namespace file {
             File(void);
             File(std::string path, std::string mode);
             void open(std::string path, std::string mode);
+            bool eof(void);
             bool is_open(void);
+            bool has_error(void);
             void close(void);
             long size(void);
             long tell(void);
@@ -22,15 +24,13 @@ namespace file {
             void putc(char c);
             unsigned char getc(void);
             long read(void *dest, long length);
+            long write(const void *data, long length);
 
         private:
             FILE *file;
     };
 
-    std::ostream& error(std::string e);
-
-    template<typename T, typename ... Targs>
-    std::ostream& error(std::string e, T s, Targs... Vargs);
+    std::ostream& error(std::string what);
 
     void trash(std::string path);
 

@@ -19,10 +19,10 @@ rule link
 
 build cfile.o: cc src/cfile.cc
 
-build zhandle.o: cc src/zhandle.cc
+build zlib.o: cc src/zlib.cc
 
-build converter.o: cc src/converter.cc
+build magick.o: cc src/magick.cc
 
 build builder.o: cc src/builder.cc
 
-build mtk-logo-builder: link cfile.o zhandle.o converter.o builder.o
+build mtk-logo-builder: link cfile.o zlib.o magick.o builder.o

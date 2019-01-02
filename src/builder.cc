@@ -8,8 +8,7 @@
 #include <cstddef>
 #include <cstring>
 #include <cfile.hh>
-#include <converter.hh>
-#include <zhandle.hh>
+#include <builder.hh>
 
 using namespace std;
 using namespace file;
@@ -32,16 +31,6 @@ static constexpr Resolution Resolutions[45] = {
     { 768,	1024 }, { 864,	1152 }, { 900,	1440 }, { 1024, 1280 },
     { 1050, 1400 }, { 1050, 1680 }, { 1080, 1920 }, { 1200, 1600 },
     { 1200, 1920 },
-};
-
-class Builder : public Converter, public ZHandle {
-    public:
-        int unpack(string logoFile);
-        int pack(string srcDir);
-
-    private:
-        void extract(string logoBin);
-        void convert(int ctx);
 };
 
 static void geometry(string fpath, Resolution *resolution);
@@ -120,6 +109,7 @@ void Builder::convert(int ctx)
             trash(images.at(iter).c_str());
         }
     }
+    images.clear();
 }
 
 static void geometry(string fpath, Resolution *resolution)
@@ -170,7 +160,7 @@ static void insert(void)
 {
     if (exists("logo.bin")) {
         vector<string> zblob;
-        searchdir(".", ".*\\.png", &zblob);
+        searchdir(".", ".*\\.zlib", &zblob);
         File logoBin("logo.bin", "rb+");
 
         if (logoBin.is_open()) {
