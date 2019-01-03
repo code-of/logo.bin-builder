@@ -7,7 +7,7 @@ cflags = $cflags -I./include -I/usr/include/GraphicsMagick
 
 ldflags = -Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now
 ldflags = $ldflags -lGraphicsMagick++ -lGraphicsMagick
-ldflags = $ldflags -lm -lz -lpthread
+ldflags = $ldflags -llcms2 -lm -lz -lpthread
 
 rule cc
   command = g++ $cflags -c $in -o $out
