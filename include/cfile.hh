@@ -14,17 +14,21 @@ namespace file {
             File(void);
             File(std::string path, std::string mode);
             void open(std::string path, std::string mode);
-            bool eof(void);
             bool is_open(void);
+            bool eof(void);
+            bool eof_unlocked(void);
             bool has_error(void);
-            void close(void);
+            bool has_error_unlocked(void);
+            int putc(int c);
+            int putc_unlocked(int _c);
+            int getc(void);
+            int getc_unlocked(void);
+            long read(void *dest, long length);
+            long write(const void *data, long length);
             long size(void);
             long tell(void);
             long seek(long offset);
-            void putc(char c);
-            unsigned char getc(void);
-            long read(void *dest, long length);
-            long write(const void *data, long length);
+            void close(void);
 
         private:
             FILE *file;

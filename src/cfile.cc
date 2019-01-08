@@ -23,6 +23,7 @@ namespace file {
 
     File::File(string path, string mode)
     {
+        this->file = NULL;
         this->file = fopen(path.c_str(), mode.c_str());
     }
 
@@ -31,13 +32,19 @@ namespace file {
         this->file = fopen(path.c_str(), mode.c_str());
     }
 
+    bool File::is_open(void)
+    {
+        return NULL != this->file;
+    }
+
     bool File::eof(void)
     {
         return feof(this->file);
     }
-    bool File::is_open(void)
+
+    bool File::eof_unlocked(void)
     {
-        return NULL != this->file;
+        return __feof_unlocked_body(this->file);
     }
 
     bool File::has_error(void)
@@ -45,10 +52,39 @@ namespace file {
         return ferror(this->file);
     }
 
-    void File::close(void)
+    bool File::has_error_unlocked(void)
     {
-        fflush(this->file);
-        fclose(this->file);
+        return __ferror_unlocked_body(this->file);
+    }
+
+    int File::putc(int c)
+    {
+        return fputc(c, this->file);
+    }
+
+    int File::putc_unlocked(int _c)
+    {
+        return (int)__putc_unlocked_body(_c, this->file);
+    }
+
+    int File::getc(void)
+    {
+        return fgetc(this->file);
+    }
+
+    int File::getc_unlocked(void)
+    {
+        return (int)__getc_unlocked_body(this->file);
+    }
+
+    long File::read(void *dest, long length)
+    {
+        return (long)fread(dest, sizeof(unsigned char), length, this->file);
+    }
+
+    long File::write(const void *data, long length)
+    {
+        return (long)fwrite(data, sizeof(unsigned char), length, this->file);
     }
 
     long File::size(void)
@@ -69,24 +105,10 @@ namespace file {
         return (long)fseek(this->file, offset, SEEK_SET);
     }
 
-    void File::putc(char c)
+    void File::close(void)
     {
-        fputc(c, this->file);
-    }
-
-    unsigned char File::getc(void)
-    {
-        return fgetc(this->file);
-    }
-
-    long File::read(void *dest, long length)
-    {
-        return (long)fread(dest, sizeof(unsigned char), length, this->file);
-    }
-
-    long File::write(const void *data, long length)
-    {
-        return (long)fwrite(data, sizeof(unsigned char), length, this->file);
+        fflush(this->file);
+        fclose(this->file);
     }
 
     ostream& error(string what)
@@ -109,7 +131,7 @@ namespace file {
 
     long sizefile(string fpath)
     {
-        File file(fpath.c_str(), "rb");
+        File file(fpath, "rb");
 
         if (file.is_open()) {
             long length = file.size();
@@ -125,7 +147,7 @@ namespace file {
     {
         void *buf = NULL;
 
-        File file(fpath.c_str(), "rb");
+        File file(fpath, "rb");
 
         if (file.is_open()) {
             buf = calloc(file.size(), sizeof(unsigned char));
@@ -148,8 +170,8 @@ namespace file {
 
     void copyfile(string dest, string src)
     {
-        File in(src.c_str(), "rb");
-        File out(dest.c_str(), "wb+");
+        File in(src, "rb");
+        File out(dest, "wb+");
 
         if (in.is_open() && out.is_open()) {
             int c;
@@ -196,6 +218,7 @@ namespace file {
     }
 
     static vector<string> *_files;
+
     static void *_expr;
 
     int _fmatch(const char *fpath, const struct stat *st, int flag, struct FTW *buf)

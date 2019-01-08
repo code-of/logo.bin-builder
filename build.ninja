@@ -11,11 +11,11 @@ ldflags = $ldflags -llcms2 -lm -lz -lpthread
 
 rule cc
   command = g++ $cflags -c $in -o $out
-  description = CC >> $out
+  description = CC => $out
 
 rule link
   command = g++ $in $ldflags -o $out && rm -f *.o
-  description = LD >> $out
+  description = LD => $out
 
 build cfile.o: cc src/cfile.cc
 
@@ -25,4 +25,4 @@ build magick.o: cc src/magick.cc
 
 build builder.o: cc src/builder.cc
 
-build mtk-logo-builder: link cfile.o zlib.o magick.o builder.o
+build logo-builder: link cfile.o zlib.o magick.o builder.o
