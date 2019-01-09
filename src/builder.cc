@@ -190,21 +190,3 @@ static void insert(void)
         exit(EXIT_FAILURE);
     }
 }
-
-int main(int argc, char **argv)
-{
-    argc--;
-    argv++;
-    if (2 == argc) {
-        Builder builder;
-        if (0 == strcmp("unpack", argv[0]))
-            return builder.unpack(argv[1]);
-        if (0 == strcmp("pack", argv[0]))
-            return builder.pack(argv[1]);
-    }
-    cout << "Usage:" << endl;
-    cout << "\tmtk-logo-builder unpack [FILE]\t- will unpack [FILE] to a directory 'out/'." << endl;
-    cout << "\tmtk-logo-builder pack [SRCDIR]\t- will create 'logo.bin' from files in [SRCDIR]." << endl;
-    cout << "\t! DO NOT RENAME UNPACKED IMAGES, OR PACKING WILL FAIL !" << endl;
-    return EXIT_SUCCESS;
-}
